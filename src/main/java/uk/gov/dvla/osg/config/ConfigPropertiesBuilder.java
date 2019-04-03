@@ -1,12 +1,12 @@
 package uk.gov.dvla.osg.config;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,9 +87,11 @@ public class ConfigPropertiesBuilder {
 	 * @return the property value as an Integer object or null if no value was
 	 *         assigned
 	 */
-	public ConfigPropertiesBuilder setAsInteger(Integer integer, String key) {
+	public ConfigPropertiesBuilder setAsInteger(AtomicInteger integer, String key) {
 		if (valueIsNumeric(key)) {
-			integer = Integer.parseInt(props.getProperty(key));
+			String value = props.getProperty(key);
+			Integer parseInt = Integer.valueOf(value);
+            integer.set(parseInt);
 		}
 		return this;
 	}
@@ -104,9 +106,11 @@ public class ConfigPropertiesBuilder {
 	 * @param key the property key
 	 * @return the property value as a long primitive
 	 */
-	public ConfigPropertiesBuilder setAsLong(Long l, String key) {
+	public ConfigPropertiesBuilder setAsLong(AtomicLong l, String key) {
 		if (valueIsNumeric(key)) {
-			l = Long.valueOf(props.getProperty(key));
+			String value = props.getProperty(key);
+            Long parseLong = Long.valueOf(value);
+            l.set(parseLong);
 		}
 		return this;
 	}
@@ -122,7 +126,7 @@ public class ConfigPropertiesBuilder {
 	 * @param key the property key
 	 * @return true if property value equals "Y" (case insensitive)
 	 */
-	public ConfigPropertiesBuilder setAsBoolean(Boolean bool, String key) {
+	public ConfigPropertiesBuilder setAsBoolean(AtomicBoolean bool, String key) {
 		setAsBool(bool, key, "Y");
 		return this;
 	}
@@ -138,7 +142,7 @@ public class ConfigPropertiesBuilder {
 	 * @param flag the string value for true
 	 * @return true if property value matches the flag (case insensitive)
 	 */
-	public ConfigPropertiesBuilder setAsBool(Boolean bool, String key, String flag) {
+	public ConfigPropertiesBuilder setAsBool(AtomicBoolean bool, String key, String flag) {
 		setAsBool(bool, key, flag, null);
 		return this;
 	}
@@ -158,13 +162,14 @@ public class ConfigPropertiesBuilder {
 	 *         insensitive). If the property key is missing then the default value
 	 *         is returned.
 	 */
-	public ConfigPropertiesBuilder setAsBool(Boolean bool, String key, String flag, Boolean defaultValue) {
+	public ConfigPropertiesBuilder setAsBool(AtomicBoolean bool, String key, String flag, Boolean defaultValue) {
 		if (defaultValue != null && !props.containsKey(key)) {
-			bool = defaultValue;
+			bool.set(defaultValue);
 			return this;
 		}
 		if (keyExists(key)) {
-			bool = props.getProperty(key).equalsIgnoreCase(flag);
+			String value = props.getProperty(key);
+            bool.set(value.equalsIgnoreCase(flag));
 		}
 		return this;
 	}
