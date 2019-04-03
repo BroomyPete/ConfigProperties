@@ -13,23 +13,29 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+/**
+ * This loads properties using a fluid builder api. Objects to assign values to
+ * are passed into each method along with the property key. As Strings are immutable
+ * StringBuilder objects are required. When properties are missing, 
+ * or values are of the wrong type, they will be added to an errors list. 
+ * Use {@link #errors()} as a terminating method to get the list of errors that have occurred.
+ */
 public class ConfigPropertiesBuilder {
 
 	private static Set<String> errors = new HashSet<>();
 	private Properties props;
 
+	/**
+	 * Instantiates a new config properties builder from the supplied properties
+	 * file. 
+	 *
+	 * @param file   the properties file
+	 */
 	public static ConfigPropertiesBuilder load(File file) {
 		return new ConfigPropertiesBuilder(file);
 	}
 
-	/**
-	 * Instantiates a new config properties object from the supplied properties
-	 * file. When properties are missing, or values are of the wrong type, the
-	 * logger will output the name of the class that instatiates this one.
-	 *
-	 * @param file   the properties file
-	 * @param logger the logger to write to
-	 */
+
 	public ConfigPropertiesBuilder(File file) {
 		try (InputStream input = new FileInputStream(file)) {
 			props.load(input);
@@ -172,13 +178,15 @@ public class ConfigPropertiesBuilder {
 	 * @return the set of values as instances of the enum type
 	 */
 	public <E extends Enum<E>> ConfigPropertiesBuilder getAsEnumSet(Set<E> enumSet, Class<E> enumClass, String key) {
-		try {
-			if (keyExists(key)) {
-				enumSet.addAll(Stream.of(props.getProperty(key).split(",")).map(String::trim)
-						.map(s -> Enum.valueOf(enumClass, s)).collect(Collectors.toSet()));
+		if (keyExists(key)) {
+			try {
+					enumSet.addAll(Stream.of(props.getProperty(key).split(","))
+							.map(String::trim)
+							.map(s -> Enum.valueOf(enumClass, s))
+							.collect(Collectors.toSet()));
+			} catch (IllegalArgumentException  ex) {
+				errors.add(key + " : Contains an ilegal enum value");
 			}
-		} catch (IllegalArgumentException  ex) {
-			errors.add(key + " : Contains an ilegal enum value");
 		}
 		return this;
 	}
@@ -186,7 +194,7 @@ public class ConfigPropertiesBuilder {
 	/**
 	 * Gets the list of errors that occured. This is a terminal operation.
 	 *
-	 * @return the sets the
+	 * @return the set of errors or an empty set if none have occurred.
 	 */
 	public Set<String> errors() {
 		return this.errors();
